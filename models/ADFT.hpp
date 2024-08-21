@@ -16,4 +16,8 @@
  * to be a random walk.
  */
 
+void ADFT() {
+
+}
+
 #endif // ADFT_H_
