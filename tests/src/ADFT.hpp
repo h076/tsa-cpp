@@ -16,7 +16,7 @@
  * to be a random walk.
  */
 
-#include <xtensor/containers/xarray.hpp>
+#include "tools/tools.hpp"
 #include <cmath>
 
 namespace tests {
@@ -70,7 +70,7 @@ namespace tests {
 
             // nobs is a return value regarding the number of observations
             // used for the ADF regression and calculation of the critical values.
-            int nobs = x.dimension();
+            std::size_t nobs = x.shape()[0];
 
             // ntrend seems to be used in the maxlag calc if
             // maxlag is calculated rather than inputted and it is smaller than
@@ -79,10 +79,10 @@ namespace tests {
 
             if (maxlag == 0) {
                 // from Greene referencing Schwert 1989
-                maxlag = static_cast<int>(ceil(12.0 * pow(nobs / 100.0, 1.0 / 4.0)));
+                maxlag = static_cast<int>(ceil(12.0 * pow(static_cast<double>(nobs) / 100.0, 1.0 / 4.0)));
                 // -1 for the diff
                 // may need floor for first arg
-                maxlag = std::min(nobs / 2 - ntrend - 1, maxlag);
+                maxlag = std::min(static_cast<int>(nobs) / 2 - ntrend - 1, maxlag);
                 if (maxlag < 0) {
                     std::cout << "Sample size is to short to use the selected regression component" << std::endl;
                     return;
@@ -93,8 +93,26 @@ namespace tests {
             }
 
             // get the discrete difference along the given axis
-            // check this is correct and for the return type
-            //auto xdiff = xt::view(x, xt::range(1, _)) - xt::view(x, xt::range())
+            xt::xarray<double> xdiff = xt::diff(x);
+            xt::xarray<double> xdall = tools::lagmat(xdiff, maxlag, "both", "in");
+
+            nobs = xdall.shape()[0];
+
+            auto xdallBlock = xt::view(xdall, xt::all(), 0);
+            xdallBlock = xt::view(x, xt::range(-nobs-1, -1));
+
+            xt::xarray<double> xdshort = xt::view(xdiff, xt::range(-nobs, 0));
+
+            xt::xarray<double> fullRHS;
+            if (autolag == "AIC" || autolag == "BIC" || autolag == "t-stat") {
+                if (regression == "c" || regression == "ct" || regression == "ctt") {
+                    // implement add trend function
+                    //fullRHS = tools::addTrend(xdall, regression, true);
+                }else {
+                    fullRHS = xdall;
+                }
+            }
+
 
         }
     }
