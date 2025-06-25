@@ -11,6 +11,8 @@ target_include_directories(tests INTERFACE
     ${PROJECT_SOURCE_DIR}/external/xtensor/include  # xtensor manually added
 )
 
+add_subdirectory(tests)
+
 # Main executable
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE tests)

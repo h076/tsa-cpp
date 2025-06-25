@@ -4,6 +4,8 @@
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor/core/xmath.hpp>
+#include <xtensor/io/xio.hpp>
+
 
 namespace tools {
 
@@ -28,61 +30,63 @@ namespace tools {
 
         // should check strings ...
 
-        if (x.dimension() == 1) {
-            std::size_t n = x.shape()[0];
-            x = x.reshape({n,1});
-        } else if (x.dimension() != 2) {
-            throw std::invalid_argument("lagmat: x must be 1D or 2D");
+        if (x.dimension() != 1 && x.dimension() != 2) {
+            throw std::invalid_argument("lagmat: input must be 1D or 2D");
         }
 
-        std::size_t dropidx = 0;
+        // handle 1D arrays
+        std::size_t nobs;
+        std::size_t nvar;
+        if (x.dimension() == 1) {
+            nobs = x.shape()[0];
+            nvar = 1;
+            x = xt::reshape_view(x, std::vector<std::size_t>{nobs, 1});
+        }else {
+            nobs = x.shape()[0];
+            nvar = x.shape()[1];
+        }
 
-        auto shape = x.shape();
-        std::size_t nobs = shape[0]; // num of rows
-        std::size_t nvar = shape[1]; // num of columns
+        // validate maxlag
+        if (maxlag < 0)
+            throw std::invalid_argument("lagmat: maxlag must be non-negative");
 
-        if (original == "ex")
-            dropidx = nvar;
+        if (static_cast<std::size_t>(maxlag) >= nobs)
+            throw std::invalid_argument("lagmat: maxlag must be < nobs");
 
-        if (maxlag >= nobs)
-            throw std::invalid_argument("tools::lagmat : maxlag should be < nobs");
+        // validate trim
+        if (trim != "forward" && trim != "backward" && trim != "both"    && trim != "none")
+            throw std::invalid_argument("lagmat: trim must be 'forward', 'backward', 'both', or 'none'");
 
+        // Validate original option
+        if (original != "ex" && original != "in")
+            throw std::invalid_argument("lagmat: original must be 'ex' or 'in'");
+
+        std::size_t dropidx = (original == "ex") ? nvar : 0;
 
         // create shape of zero xarray
-        std::vector<std::size_t> zerosShape = {nobs, nvar};
+        std::vector<std::size_t> zerosShape = {nobs + static_cast<std::size_t>(maxlag),
+                                               nvar * (static_cast<std::size_t>(maxlag) + 1)};
         // fill new zeros xarray
-        xt::xarray<double> lm = xt::zeros<double>(shape);
+        xt::xarray<double> lm = xt::zeros<double>(zerosShape);
 
         // equivelant of :
         // for k in range(0, (maxlag + 1)):
         //     lm [maxlag - k : nobs+maxlag-k, nvar*(maxlag-k) : nvar*(maxlag-k+1)] = x
-        for(int k=0; k<maxlag+1; k++) {
-            std::size_t r0 = maxlag - k;
-            std::size_t r1 = nobs + maxlag - k;
-            std::size_t c0 = nvar * (maxlag - k);
-            std::size_t c1 = c0 + nvar;
+        for(int k=0; k<maxlag+1; ++k) {
+            std::size_t r0 = static_cast<std::size_t>(maxlag) - k;
+            std::size_t r1 = nobs + r0;
+            std::size_t c0 = (static_cast<std::size_t>(maxlag) - k) * nvar;
+            std::size_t c1 = nvar + c0;
 
             // take block view from zeros array
             auto block = xt::view(lm, xt::range(r0, r1), xt::range(c0, c1));
             block = x;
         }
 
-        std::size_t startobs;
-        if (trim == "none" || trim == "forward")
-            startobs = 0;
-        else if (trim == "backward" || trim == "both")
-            startobs = maxlag;
-        else {
-            throw std::invalid_argument("tools::lagmat : Invalid trim option");
-        }
+        std::size_t startobs = (trim == "none" || trim == "forward") ? 0 : static_cast<std::size_t>(maxlag);
+        std::size_t stopobs = (trim == "none" || trim == "backward") ? lm.shape()[0] : nobs;
 
-        std::size_t stopobs;
-        if (trim == "none" || trim == "backward")
-            stopobs = lm.size();
-        else
-            stopobs = nobs;
-
-        xt::xarray<double> lags = xt::view(lm, xt::range(startobs, stopobs), xt::range(0, dropidx));
+        xt::xarray<double> lags = xt::view(lm, xt::range(startobs, stopobs), xt::range(dropidx, lm.shape()[1]));
         return lags;
     }
 
