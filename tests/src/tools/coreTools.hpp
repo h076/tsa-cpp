@@ -92,7 +92,7 @@ namespace tools {
 
     // Prepends/appends columns for constant and/or (linear, quadratic) trend to the design matrix.
     // For example a 2D array of (n, p) will be reshaped to (n, p + k), k being the number of trend values
-    xt::xarray<double> addTrend(xt::xarray<double>& x, std::string trend, bool prepend) {
+    xt::xarray<double> addTrend(const xt::xarray<double>& X, std::string trend, bool prepend) {
         /*
          *
          * x : 2D array
@@ -111,44 +111,45 @@ namespace tools {
         // turn trend to lower case
         std::transform(trend.begin(), trend.end(), trend.begin(), ::tolower);
 
-        // Decide how many additional columns
-        int order;
-        if (trend == "c")
-            order = 0;
-        else if (trend == "t" || trend == "ct")
-            order = 1;
-        else if (trend == "ctt")
-            order = 2;
-        else
-            throw std::invalid_argument("Trend '" + trend + "' is not valid");
+        // check trend is valid
+        if (trend != "c" && trend != "ct" && trend != "ctt" && trend != "cttt")
+            throw std::invalid_argument("tools::addTrend : Trend " + trend + " is invalid.");
 
-        const auto& shape = x.shape();
-        if (shape.size() != 2)
-            throw std::invalid_argument("X must be of 2 dimensions");
-        std::size_t nobs = shape[0];
+        // ensure x is 2D
+        xt::xarray<double> x = X;
+        std::size_t nobs;
+        if (x.dimension() == 1) {
+            nobs = x.shape()[0];
+            x = x.reshape({nobs, 1});
+        } else if (x.dimension() == 2) {
+            nobs = x.shape()[0];
+        } else {
+            throw std::invalid_argument("tools::addTrend : X must be either 1 or 2D");
+        }
 
-        // build trend array of shape (nobs, order+1), possibly dropping the constant
+        // build sub trends 1, 2, ..., nobs
+        xt::xarray<double> constant = xt::arange<double>(1.0, double(nobs) + 1.0);
+        xt::xarray<double> lin = constant.reshape({nobs, 1});
+        xt::xarray<double> quad = xt::eval(xt::pow(constant, 2));
+        quad = quad.reshape({nobs, 1});
+
+        // build trend array of shape
         xt::xarray<double> trendarr;
-        if (order == 0) {
+        if (trend == "c") {
             // constant only
             std::vector<std::size_t> tdrs = {nobs, 1};
             trendarr = xt::ones<double>(tdrs);
-        } else if (order == 1) {
-            // add time index 1, ...., nobs
-            auto t = xt::arange<double>(1.0, double(nobs) + 1.0);
-            if (trend == "t") {
-                // only trend
-                trendarr = t.reshape({nobs, 1});
-            }else {
-                // constant + trend
-                // ones{nobs} is a 1D view, stack into columns
-                trendarr = xt::stack(xt::xtuple(xt::ones<double>({nobs}), t), 1);
-            }
+        } else if (trend == "t") {
+            // trend only
+            trendarr = lin;
+        } else if (trend == "ct") {
+            // constant + linear
+            std::vector<std::size_t> tdrs = {nobs, 1};
+            trendarr = xt::concatenate(xt::xtuple(xt::ones<double>(tdrs), lin), 1);
         } else {
             // constant + linear + quadratic
-            auto t = xt::arange<double>(1.0, double(nobs) + 1.0);
-            auto t2 = xt::pow(t, 2);
-            trendarr = xt::stack(xt::xtuple(xt::ones<double>({nobs}), t, t2), 1);
+            std::vector<std::size_t> tdrs = {nobs, 1};
+            trendarr = xt::concatenate(xt::xtuple(xt::ones<double>(tdrs), lin, quad), 1);
         }
 
         // concat along axis=1
