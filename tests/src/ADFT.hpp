@@ -16,7 +16,7 @@
  * to be a random walk.
  */
 
-#include "tools/coreTools.hpp"
+#include "coreTools.hpp"
 #include <cmath>
 
 namespace tests {

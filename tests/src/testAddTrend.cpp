@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "tools/coreTools.hpp"
+#include "coreTools.hpp"
 
 int main(int argc, char *argv[]) {
 
