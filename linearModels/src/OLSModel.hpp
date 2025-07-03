@@ -3,19 +3,19 @@
 
 #include "RegressionModel.hpp"
 
-namespace models {
+namespace linModels {
 
     // Ordinaray Least Squares model
 
-    class OLS : public RegressionModel {
+    class OLSModel : public RegressionModel {
 
         using RegressionModel::RegressionModel;
 
-        // Closed form solution working on X (n, p)
+        // Closed form solution working on X (n, k)
         // n observations
         // p features
-        void fit() override {
-            // Transpose X (n, p) to Xt (p, n)
+        RegressionResult fit() override {
+            // Transpose X (n, k) to Xt (k, n)
             auto Xt = xt::transpose(X);
             // Compute X^{t}X with dot
             auto XtX = xt::linalg::dot(Xt, X);
@@ -29,6 +29,24 @@ namespace models {
             fittedValues = xt::linalg::dot(X, params);
             // Calculate residuals
             residuals = y - fittedValues;
+
+            // Error metrics
+            double rss = xt::sum(xt::square(residuals))();
+            size_t n = X.shape(0);
+            size_t k = X.shape(1); // can be used for lag used
+            double sigma2 = rss / (n - k);
+
+            // Variance-covariance matrix
+            auto varBeta = sigma2 * XtXi;
+
+            // T-values
+            xt::xarray<double> tValues = params / xt::sqrt(xt::diag(varBeta));
+
+            // AIC and BIC
+            double aic = n * std::log(rss / n) + 2 * k;
+            double bic = n * std::log(rss / n) + k * std::log(n);
+
+            return {params, fittedValues, residuals, tValues, aic, bic, static_cast<int>(k)};
         }
     };
 

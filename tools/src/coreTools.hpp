@@ -1,11 +1,14 @@
 #ifndef TOOLS_H_
 #define TOOLS_H_
 
+#include <stdexcept>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor/core/xmath.hpp>
 #include <xtensor/io/xio.hpp>
 
+#include "RegressionModel.hpp"
+#include "modelHelpers.hpp"
 
 namespace tools {
 
@@ -95,7 +98,7 @@ namespace tools {
     xt::xarray<double> addTrend(const xt::xarray<double>& X, std::string trend, bool prepend) {
         /*
          *
-         * x : 2D array
+         * X : 2D array
          *
          * trend : string
          *     * "c" add constant only
@@ -161,6 +164,94 @@ namespace tools {
         }
 
         return result;
+    }
+
+    struct autoLagResult {
+        double icbest;
+        int bestLag;
+    };
+
+    // Returns the result for the lag length that maximises info criterion
+    autoLagResult autoLag(linModels::modelType mod, const xt::xarray<double>& X, const xt::xarray<double>& y,
+                            int startLag, int maxLag, std::string method) {
+
+        /*
+         * mod : linModels::modelType
+         *     - Model class type
+         *
+         * X : xarray
+         *     - Input nobs by (startlag + maxlag) array containing lags and possibly other variables
+         *
+         * y : xarray
+         *     - nobs array containing y variable
+         *
+         * startLag : int
+         *     - The first zero-indexed column to hold a lag
+         *
+         * maxLag : int
+         *     - The highest lag order for lag length selection
+         *
+         * method : string {"aic", "bic", "t-stat"}
+         *     - aic : Akaike Information Criterion
+         *     - bic : Bayes Information Criterion
+         *     - t-stat : Based on last lag
+         */
+
+        /*
+         * Returns ...
+         *
+         * icbest : float
+         *     - Best information criteria
+         *
+         * bestlag : int
+         *     - Lag length that maximises information crtiterion
+         */
+
+        // dictionary storing key-value (lag, results) pairs
+        std::unordered_map<int, linModels::RegressionResult> results;
+        std::transform(method.begin(), method.begin(), method.end(), ::tolower);
+
+
+        for(int lag = startLag; lag < startLag + maxLag + 1; lag++) {
+            auto * modInstance = linModels::getModelOfType(mod, xt::view(X, xt::all(), xt::range(0, lag)), y);
+            results[lag] = modInstance->fit();
+            free(modInstance);
+        }
+
+        double icbest;
+        int bestLag;
+
+        if (method == "aic") {
+            auto best = std::min_element(results.begin(), results.end(), [](const auto& a, const auto& b) {
+                return a.second.aic < b.second.aic;
+            });
+
+            icbest = best->second.aic;
+            bestLag = best->second.lag;
+        } else if (method == "bic") {
+            auto best = std::min_element(results.begin(), results.end(), [](const auto& a, const auto& b) {
+                return a.second.bic < b.second.bic;
+            });
+
+            icbest = best->second.bic;
+            bestLag = best->second.lag;
+        } else if (method == "t-stat") {
+            double stop = 1.6448536269514722;
+
+            bestLag = startLag + maxLag;
+            icbest = 0.0;
+
+            for(int lag = startLag + maxLag; lag > startLag - 1; lag--) {
+                icbest = std::abs(results[lag].tValues[-1]);
+                bestLag = lag;
+                if (std::abs(icbest) >= stop)
+                    break; // break for first lag with significant t-stat
+            }
+        } else {
+            throw std::invalid_argument("tools::autoLag : Invalid method.");
+        }
+
+        return {icbest, bestLag};
     }
 }
 
