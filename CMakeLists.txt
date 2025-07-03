@@ -24,6 +24,10 @@ target_include_directories(linearModels INTERFACE
     ${PROJECT_SOURCE_DIR}/models/src
     ${PROJECT_SOURCE_DIR}/external/xtensor/include
 )
+target_include_directories(linearModels INTERFACE
+    ${PROJECT_SOURCE_DIR}/models/src
+    ${PROJECT_SOURCE_DIR}/external/xtensor-blas/include
+)
 
 target_link_libraries(tests INTERFACE tools linearModels)
 
