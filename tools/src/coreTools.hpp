@@ -209,18 +209,18 @@ namespace tools {
 
         // dictionary storing key-value (lag, results) pairs
         std::unordered_map<int, linModels::RegressionResult> results;
-        std::transform(method.begin(), method.begin(), method.end(), ::tolower);
+        std::transform(method.begin(), method.end(), method.begin(), ::tolower);
 
-
+        // Loop over lags from startLag to startLag + maxLag (inclusive)
         for(int lag = startLag; lag < startLag + maxLag + 1; lag++) {
-            auto * modInstance = linModels::getModelOfType(mod, xt::view(X, xt::all(), xt::range(0, lag)), y);
-            results[lag] = modInstance->fit();
-            free(modInstance);
+            std::unique_ptr<linModels::RegressionModel> modInstance = linModels::getModelOfType(mod, xt::view(X, xt::all(), xt::range(0, lag)), y);
+            results[lag] = modInstance->fit(); // Store model result
         }
 
-        double icbest;
-        int bestLag;
+        double icbest; // Best information criterion
+        int bestLag; // Corresponding lag
 
+        // Select lag with lowest AIC
         if (method == "aic") {
             auto best = std::min_element(results.begin(), results.end(), [](const auto& a, const auto& b) {
                 return a.second.aic < b.second.aic;
@@ -228,21 +228,26 @@ namespace tools {
 
             icbest = best->second.aic;
             bestLag = best->second.lag;
-        } else if (method == "bic") {
+        }
+        // Select lag with lowest BIC
+        else if (method == "bic") {
             auto best = std::min_element(results.begin(), results.end(), [](const auto& a, const auto& b) {
                 return a.second.bic < b.second.bic;
             });
 
             icbest = best->second.bic;
-            bestLag = best->second.lag;
-        } else if (method == "t-stat") {
-            double stop = 1.6448536269514722;
+            bestLag = best->first;
+        }
+        // Select highest lag where last t-stat is statistically significant
+        else if (method == "t-stat") {
+            double stop = 1.6448536269514722; // 95% critical value
 
             bestLag = startLag + maxLag;
             icbest = 0.0;
 
+            // Iterate backwards from largest to smallest lag
             for(int lag = startLag + maxLag; lag > startLag - 1; lag--) {
-                icbest = std::abs(results[lag].tValues[-1]);
+                icbest = std::abs(results[lag].tValues.back());
                 bestLag = lag;
                 if (std::abs(icbest) >= stop)
                     break; // break for first lag with significant t-stat
