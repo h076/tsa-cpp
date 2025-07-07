@@ -37,6 +37,8 @@ namespace linModels {
             RegressionModel(const xt::xarray<double>& x, const xt::xarray<double>& y)
                 : X(x), y(y) {};
 
+            virtual ~RegressionModel() = default;
+
             virtual RegressionResult fit() = 0;
 
             xt::xarray<double> getParams() const {return params;}

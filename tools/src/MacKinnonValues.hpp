@@ -216,11 +216,9 @@ namespace tools {
         }
 
         // Standard normal CDF using error function
-        inline double norm_cdf(double value) {
-            return 0.5 * std::erfc(-value / std::sqrt(2));
+        inline double norm_cdf(double x, double mu = 0.0, double sigma = 1.0) {
+           return 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2.0))));
         }
-
-
 
         inline double p_value(double teststat, const std::string& regression = "c", int N = 1) {
 
@@ -262,7 +260,9 @@ namespace tools {
                 tau_coef = tau_largep_map.at(regression);
             }
 
-            auto flipped = xt::flip(*tau_coef, 0);
+            auto coef_view = xt::view(*tau_coef, xt::all());
+            auto coef_arr = xt::xarray<double>(coef_view);
+            auto flipped = xt::eval(xt::flip(coef_arr));
             std::vector<double> coeffs(flipped.begin(), flipped.end());
             return norm_cdf(polyval_scalar(coeffs, teststat));
         }

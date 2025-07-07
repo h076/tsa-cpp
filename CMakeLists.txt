@@ -12,6 +12,9 @@ add_custom_target(copy_compile_commands ALL
   COMMENT "Copying compile_commands.json to root directory"
 )
 
+# === Package required by xtensor-blas ===
+find_package(LAPACK REQUIRED)
+
 # === Add subdirectories first ===
 add_subdirectory(linearModels)
 add_subdirectory(tools)
@@ -19,4 +22,6 @@ add_subdirectory(tests)
 
 # === Main executable ===
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE tests)
+
+# === Link libraries ===
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LAPACK_LIBRARIES} tests)

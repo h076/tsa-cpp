@@ -10,3 +10,8 @@ target_include_directories(tools PUBLIC
 )
 
 target_link_libraries(tools PUBLIC linearModels)
+
+find_package(LAPACK REQUIRED)
+
+add_executable(coreToolsTest src/coreToolsTests.cpp)
+target_link_libraries(coreToolsTest tools ${LAPACK_LIBRARIES})

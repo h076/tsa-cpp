@@ -10,3 +10,8 @@ target_include_directories(tests PUBLIC
 )
 
 target_link_libraries(tests PUBLIC tools linearModels)
+
+find_package(LAPACK REQUIRED)
+
+add_executable(testADFT src/testADFT.cpp)
+target_link_libraries(testADFT PRIVATE tests ${LAPACK_LIBRARIES})
