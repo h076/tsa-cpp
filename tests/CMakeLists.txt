@@ -1,7 +1,17 @@
-add_executable(testLagmat src/testLagmat.cpp)
+file(GLOB_RECURSE TESTS_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
 
-target_link_libraries(testLagmat PRIVATE tests)
+add_library(tests STATIC ${TESTS_SOURCES})
 
-add_executable(testAddTrend src/testAddTrend.cpp)
+target_include_directories(tests PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/external/xtensor/include
+)
 
-target_link_libraries(testAddTrend PRIVATE tests)
+target_link_libraries(tests PUBLIC tools linearModels)
+
+find_package(LAPACK REQUIRED)
+
+add_executable(testADFT src/testADFT.cpp)
+target_link_libraries(testADFT PRIVATE tests ${LAPACK_LIBRARIES})

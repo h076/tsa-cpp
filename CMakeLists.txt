@@ -4,33 +4,24 @@ project(statsTesting LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# test header library
-add_library(tests INTERFACE)
-target_include_directories(tests INTERFACE
-    ${PROJECT_SOURCE_DIR}/tests/src
-    ${PROJECT_SOURCE_DIR}/external/xtensor/include  # xtensor manually added
+# === Copy compile_commands.json to root ===
+add_custom_target(copy_compile_commands ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_BINARY_DIR}/compile_commands.json
+          ${PROJECT_SOURCE_DIR}/compile_commands.json
+  COMMENT "Copying compile_commands.json to root directory"
 )
 
-# tools header library
-add_library(tools INTERFACE)
-target_include_directories(tools INTERFACE
-    ${PROJECT_SOURCE_DIR}/tools/src
-    ${PROJECT_SOURCE_DIR}/external/xtensor/include
-)
+# === Package required by xtensor-blas ===
+find_package(LAPACK REQUIRED)
 
-# linear models library
-add_library(linearModels INTERFACE)
-target_include_directories(linearModels INTERFACE
-    ${PROJECT_SOURCE_DIR}/models/src
-    ${PROJECT_SOURCE_DIR}/external/xtensor/include
-)
-
-target_link_libraries(tests INTERFACE tools linearModels)
-
-add_subdirectory(tests)
-add_subdirectory(tools)
+# === Add subdirectories first ===
 add_subdirectory(linearModels)
+add_subdirectory(tools)
+add_subdirectory(tests)
 
-# Main executable
+# === Main executable ===
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE tests)
+
+# === Link libraries ===
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LAPACK_LIBRARIES} tests)
