@@ -12,8 +12,8 @@
 
 namespace tools {
 
-    // lagmat will return a 2d array of lags
-    xt::xarray<double> lagmat(xt::xarray<double>& x, int maxlag, std::string trim, std::string original) {
+    // lagmat will return a 2d tensor of lags
+    xt::xtensor<double, 2> lagmat(xt::xtensor<double, 2>& x, int maxlag, std::string trim, std::string original) {
         /*
          * x : xarray<double>, input at most 2D
          *
@@ -33,21 +33,9 @@ namespace tools {
 
         // should check strings ...
 
-        if (x.dimension() != 1 && x.dimension() != 2) {
-            throw std::invalid_argument("lagmat: input must be 1D or 2D");
-        }
-
-        // handle 1D arrays
-        std::size_t nobs;
-        std::size_t nvar;
-        if (x.dimension() == 1) {
-            nobs = x.shape()[0];
-            nvar = 1;
-            x = xt::reshape_view(x, std::vector<std::size_t>{nobs, 1});
-        }else {
-            nobs = x.shape()[0];
-            nvar = x.shape()[1];
-        }
+        // Compute shape of tensor
+        std::size_t nobs = x.shape(0);
+        std::size_t nvar = x.shape(1);
 
         // validate maxlag
         if (maxlag < 0)
@@ -66,11 +54,9 @@ namespace tools {
 
         std::size_t dropidx = (original == "ex") ? nvar : 0;
 
-        // create shape of zero xarray
-        std::vector<std::size_t> zerosShape = {nobs + static_cast<std::size_t>(maxlag),
-                                               nvar * (static_cast<std::size_t>(maxlag) + 1)};
-        // fill new zeros xarray
-        xt::xarray<double> lm = xt::zeros<double>(zerosShape);
+        // fill new zeros xtensor
+        xt::xtensor<double, 2> lm = xt::zeros<double>({nobs + static_cast<std::size_t>(maxlag),
+                nvar * (static_cast<std::size_t>(maxlag) + 1)});
 
         // equivelant of :
         // for k in range(0, (maxlag + 1)):
@@ -89,13 +75,19 @@ namespace tools {
         std::size_t startobs = (trim == "none" || trim == "forward") ? 0 : static_cast<std::size_t>(maxlag);
         std::size_t stopobs = (trim == "none" || trim == "backward") ? lm.shape()[0] : nobs;
 
-        xt::xarray<double> lags = xt::view(lm, xt::range(startobs, stopobs), xt::range(dropidx, lm.shape()[1]));
+        xt::xtensor<double, 2> lags = xt::view(lm, xt::range(startobs, stopobs), xt::range(dropidx, lm.shape()[1]));
         return lags;
+    }
+
+    // Handle 1D tensors for lagmat
+    xt::xtensor<double, 2> lagmat(xt::xtensor<double, 1>& x, int maxlag, std::string trim, std::string original) {
+        xt::xtensor<double, 2> x2 = xt::expand_dims(x, 1);
+        return lagmat(x2, maxlag, trim, original);
     }
 
     // Prepends/appends columns for constant and/or (linear, quadratic) trend to the design matrix.
     // For example a 2D array of (n, p) will be reshaped to (n, p + k), k being the number of trend values
-    xt::xarray<double> addTrend(const xt::xarray<double>& X, std::string trend, bool prepend) {
+    xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 2>& x, std::string trend, bool prepend) {
         /*
          *
          * X : 2D array
@@ -118,26 +110,16 @@ namespace tools {
         if (trend != "c" && trend != "ct" && trend != "ctt" && trend != "cttt")
             throw std::invalid_argument("tools::addTrend : Trend " + trend + " is invalid.");
 
-        // ensure x is 2D
-        xt::xarray<double> x = X;
-        std::size_t nobs;
-        if (x.dimension() == 1) {
-            nobs = x.shape()[0];
-            x = x.reshape({nobs, 1});
-        } else if (x.dimension() == 2) {
-            nobs = x.shape()[0];
-        } else {
-            throw std::invalid_argument("tools::addTrend : X must be either 1 or 2D");
-        }
+        // Compute num of objects
+        std::size_t nobs = x.shape(0);
 
         // build sub trends 1, 2, ..., nobs
-        xt::xarray<double> constant = xt::arange<double>(1.0, double(nobs) + 1.0);
-        xt::xarray<double> lin = constant.reshape({nobs, 1});
-        xt::xarray<double> quad = xt::eval(xt::pow(constant, 2));
-        quad = quad.reshape({nobs, 1});
+        xt::xtensor<double, 1> constant = xt::arange<double>(1.0, double(nobs) + 1.0);
+        xt::xtensor<double, 2> lin = xt::expand_dims(constant, 1);
+        xt::xtensor<double, 2> quad = xt::expand_dims(xt::eval(xt::pow(constant, 2)), 1);
 
         // build trend array of shape
-        xt::xarray<double> trendarr;
+        xt::xtensor<double, 2> trendarr;
         if (trend == "c") {
             // constant only
             std::vector<std::size_t> tdrs = {nobs, 1};
@@ -156,7 +138,7 @@ namespace tools {
         }
 
         // concat along axis=1
-        xt::xarray<double> result;
+        xt::xtensor<double, 2> result;
         if (prepend) {
             result = xt::concatenate(xt::xtuple(trendarr, x), 1);
         } else {
@@ -166,13 +148,19 @@ namespace tools {
         return result;
     }
 
+    // Handle tensor of 1D as input for addTrend
+    xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 1>& x, std::string trend, bool prepend) {
+        xt::xtensor<double, 2> x2 = xt::expand_dims(x, 1);
+        return addTrend(x2, trend, prepend);
+    }
+
     struct autoLagResult {
         double icbest;
         int bestLag;
     };
 
     // Returns the result for the lag length that maximises info criterion
-    autoLagResult autoLag(linModels::modelType mod, const xt::xarray<double>& X, const xt::xarray<double>& y,
+    autoLagResult autoLag(linModels::modelType mod, const xt::xtensor<double, 2>& X, const xt::xtensor<double, 1>& y,
                             int startLag, int maxLag, std::string method) {
 
         /*
@@ -216,6 +204,7 @@ namespace tools {
             std::unique_ptr<linModels::RegressionModel> modInstance = linModels::getModelOfType(mod, xt::view(X, xt::all(), xt::range(0, lag)), y);
             results[lag] = modInstance->fit(); // Store model result
         }
+        std::cout << "after loop \n";
 
         double icbest; // Best information criterion
         int bestLag; // Corresponding lag

@@ -2,15 +2,16 @@
 #define REGRESSIONMODEL_H_
 
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/containers/xtensor.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 
 namespace linModels {
 
     struct RegressionResult {
-        xt::xarray<double> params;
-        xt::xarray<double> fittedValues;
-        xt::xarray<double> residuals;
-        xt::xarray<double> tValues;
+        xt::xtensor<double, 1> params;
+        xt::xtensor<double, 1> fittedValues;
+        xt::xtensor<double, 1> residuals;
+        xt::xtensor<double, 1> tValues;
 
         double aic = 0.0;
         double bic = 0.0;
@@ -21,12 +22,12 @@ namespace linModels {
     class RegressionModel {
 
         protected:
-            xt::xarray<double> X;
-            xt::xarray<double> y;
-            xt::xarray<double> params; // model coefficients
-            xt::xarray<double> fittedValues; // The predicted values
-            xt::xarray<double> residuals; // residual error between true y and predicted
-            xt::xarray<double> tValues; // how significantly different coeffiecients are from zero
+            xt::xtensor<double, 2> X;
+            xt::xtensor<double, 1> y;
+            xt::xtensor<double, 1> params; // model coefficients
+            xt::xtensor<double, 1> fittedValues; // The predicted values
+            xt::xtensor<double, 1> residuals; // residual error between true y and predicted
+            xt::xtensor<double, 1> tValues; // how significantly different coeffiecients are from zero
 
             double aic; // Akaike information criterion
             double bic; // Bayesian information criterion
@@ -34,16 +35,18 @@ namespace linModels {
             int lag; // Lag length used
 
         public:
-            RegressionModel(const xt::xarray<double>& x, const xt::xarray<double>& y)
+            // x passed from xt::view which gives expression
+            template <typename EXPR>
+            RegressionModel(const EXPR& x, const xt::xtensor<double, 1>& y)
                 : X(x), y(y) {};
 
             virtual ~RegressionModel() = default;
 
             virtual RegressionResult fit() = 0;
 
-            xt::xarray<double> getParams() const {return params;}
-            xt::xarray<double> getFitted() const {return fittedValues;}
-            xt::xarray<double> getResiduals() const {return residuals;}
+            xt::xtensor<double, 1> getParams() const {return params;}
+            xt::xtensor<double, 1> getFitted() const {return fittedValues;}
+            xt::xtensor<double, 1> getResiduals() const {return residuals;}
     };
 
 }
