@@ -10,7 +10,7 @@ namespace linModels {
         OLS
     };
 
-    std::unique_ptr<RegressionModel> getModelOfType(modelType t, const xt::xarray<double>& X, const xt::xarray<double>& y) {
+    inline std::unique_ptr<RegressionModel> getModelOfType(modelType t, const xt::xtensor<double, 2>& X, const xt::xtensor<double, 1>& y) {
         switch(t) {
             case OLS:
                 return std::make_unique<OLSModel>(X, y);

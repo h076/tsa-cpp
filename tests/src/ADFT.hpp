@@ -38,7 +38,7 @@ namespace tests {
             double icbest;
         };
 
-        ADFResult adfuller(xt::xarray<double> x, int maxlag = 0, std::string regression = "c",
+        ADFResult adfuller(xt::xtensor<double, 1> x, int maxlag = 0, std::string regression = "c",
                       std::string autolag = "AIC", bool store = false, bool regresults = false) {
             /**
              * x : 1d array of test data
@@ -113,11 +113,11 @@ namespace tests {
             //std::cout << "Checking maxlag : " << maxlag << std::endl;
 
             // get the discrete difference along the given axis
-            xt::xarray<double> xdiff = xt::diff(x);
+            xt::xtensor<double, 1> xdiff = xt::diff(x);
             //std::cout << "Checking xdiff : " << xt::adapt(xdiff.shape()) << std::endl;
             //std::cout << xdiff << std::endl;
 
-            xt::xarray<double> xdall = tools::lagmat(xdiff, maxlag, "both", "in");
+            xt::xtensor<double, 2> xdall = tools::lagmat(xdiff, maxlag, "both", "in");
             //std::cout << "Checking xdall : " << xt::adapt(xdall.shape()) << std::endl;
             //std::cout << xdall << std::endl;
 
@@ -127,11 +127,11 @@ namespace tests {
             //std::cout << "Checking xdall v2 : " << xt::adapt(xdall.shape()) << std::endl;
             //std::cout << xdall << std::endl;
 
-            xt::xarray<double> xdshort = xt::view(xdiff, xt::range(-nobs, xt::all()));
+            xt::xtensor<double, 1> xdshort = xt::view(xdiff, xt::range(-nobs, xt::all()));
             //std::cout << "Checking xdshort : " << xt::adapt(xdshort.shape()) << std::endl;
             //std::cout << xdshort << std::endl;
 
-            xt::xarray<double> fullRHS;
+            xt::xtensor<double, 2> fullRHS;
             int usedlag;
             double icbest;
             if (autolag == "AIC" || autolag == "BIC" || autolag == "t-stat") {
@@ -186,7 +186,7 @@ namespace tests {
 
             linModels::RegressionResult resols;
             if (regression != "n") {
-                auto rhs = tools::addTrend(xt::view(xdall, xt::all(), xt::range(0, usedlag + 1)),
+                auto rhs = tools::addTrend(xt::eval(xt::view(xdall, xt::all(), xt::range(0, usedlag + 1))),
                                            regression, false);
                 resols = linModels::getModelOfType(linModels::OLS, rhs, xdshort)->fit();
             } else {

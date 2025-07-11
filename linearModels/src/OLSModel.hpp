@@ -3,6 +3,10 @@
 
 #include "RegressionModel.hpp"
 
+#include <xtensor/core/xnoalias.hpp>
+#include <xtensor/containers/xadapt.hpp>
+
+
 namespace linModels {
 
     // Ordinaray Least Squares model
@@ -14,21 +18,33 @@ namespace linModels {
         // Closed form solution working on X (n, k)
         // n observations
         // p features
-        RegressionResult fit() override {
+        inline RegressionResult fit() override {
             // Transpose X (n, k) to Xt (k, n)
-            auto Xt = xt::transpose(X);
+            xt::xtensor<double, 2> Xt = xt::transpose(X);
             // Compute X^{t}X with dot
-            auto XtX = xt::linalg::dot(Xt, X);
-            // Invert
-            auto XtXi = xt::linalg::inv(XtX);
+            xt::xtensor<double, 2> XtX = xt::linalg::dot(Xt, X);
+
+            // Before inversion must check that XtX is not singular
+            // This is done using the condition number
+            auto svd = xt::linalg::svd(XtX);
+            auto S = std::get<1>(svd);
+            double cond = S(0) / S(S.shape(0) - 1); // largest / smallest singular value
+            xt::xtensor<double, 2> XtXi;
+            if (cond > 1e12) {
+                // matrix is near singular so must use Moore-Rose pseudo inverse
+                xt::noalias(XtXi) = xt::linalg::pinv(XtX);
+            } else {
+                xt::noalias(XtXi) = xt::linalg::inv(XtX);
+            }
+
             // Compute X^{t}y with dot
-            auto Xty = xt::linalg::dot(Xt, y);
+            xt::xtensor<double, 1> Xty = xt::linalg::dot(Xt, y);
             // Calculate coefficients as dot(XtXi, Xty)
-            params = xt::linalg::dot(XtXi, Xty);
+            xt::noalias(params) = xt::linalg::dot(XtXi, Xty);
             // Make predictions
-            fittedValues = xt::linalg::dot(X, params);
+            xt::noalias(fittedValues) = xt::linalg::dot(X, params);
             // Calculate residuals
-            residuals = y - fittedValues;
+            xt::noalias(residuals) = y - fittedValues;
 
             // Error metrics
             double rss = xt::sum(xt::square(residuals))();
@@ -40,13 +56,15 @@ namespace linModels {
             auto varBeta = sigma2 * XtXi;
 
             // T-values
-            xt::xarray<double> tValues = params / xt::sqrt(xt::diag(varBeta));
+            xt::noalias(tValues) = params / xt::sqrt(xt::diagonal(varBeta));
 
             // AIC and BIC
-            double aic = n * std::log(rss / n) + 2 * k;
-            double bic = n * std::log(rss / n) + k * std::log(n);
+            aic = n * std::log(rss / n) + 2 * k;
+            bic = n * std::log(rss / n) + k * std::log(n);
 
-            return {params, fittedValues, residuals, tValues, aic, bic, static_cast<int>(k)};
+            lag = static_cast<int>(k);
+
+            return {params, fittedValues, residuals, tValues, aic, bic, lag};
         }
     };
 
