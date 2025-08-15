@@ -16,7 +16,7 @@ add_custom_target(copy_compile_commands ALL
 find_package(LAPACK REQUIRED)
 
 # === Add subdirectories first ===
-add_subdirectory(linearModels)
+add_subdirectory(models)
 add_subdirectory(tools)
 add_subdirectory(tests)
 

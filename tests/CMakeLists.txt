@@ -15,3 +15,6 @@ find_package(LAPACK REQUIRED)
 
 add_executable(testADFT src/testADFT.cpp)
 target_link_libraries(testADFT PRIVATE tests ${LAPACK_LIBRARIES})
+
+add_executable(testHurst src/testHurst.cpp)
+target_link_libraries(testHurst PRIVATE tests ${LAPACK_LIBRARIES})
