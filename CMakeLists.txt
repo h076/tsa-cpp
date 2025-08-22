@@ -23,12 +23,6 @@ set(TSA_DEPS
   lapack
 )
 
-# === Main executable ===
-add_executable(${PROJECT_NAME} src/main.cpp)
-
-# === Link libraries ===
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LAPACK_LIBRARIES} ${TSA_DEPS})
-
 # === Set up library ===
 add_library(tsa INTERFACE)
 
