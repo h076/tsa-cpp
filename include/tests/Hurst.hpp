@@ -1,7 +1,7 @@
 #ifndef HURST_H_
 #define HURST_H_
 
-#include "npTools.hpp"
+#include "../tools/npTools.hpp"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xmath.hpp>
 #include <xtensor/io/xio.hpp>

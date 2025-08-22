@@ -5,8 +5,12 @@
 #include <xtensor/views/xview.hpp>
 #include <xtensor/containers/xadapt.hpp>
 
-xt::xtensor<double, 1> differencing(xt::xtensor<double, 1> exog) {
-    return xt::adapt(xt::diff(exog, 1, {0}));
+namespace preprocessing {
+
+  xt::xtensor<double, 1> differencing(xt::xtensor<double, 1> exog) {
+      return xt::adapt(xt::diff(exog, 1, {0}));
+  }
+
 }
 
 #endif // STATIONARITY_H_

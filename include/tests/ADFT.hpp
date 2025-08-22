@@ -16,10 +16,10 @@
  * to be a random walk.
  */
 
-#include "RegressionModel.hpp"
-#include "coreTools.hpp"
-#include "modelHelpers.hpp"
-#include "MacKinnonValues.hpp"
+#include "../models/linear/RegressionModel.hpp"
+#include "../tools/coreTools.hpp"
+#include "../models/linear/modelHelpers.hpp"
+#include "../tools/MacKinnonValues.hpp"
 #include <cmath>
 #include <stdexcept>
 
