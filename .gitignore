@@ -1,0 +1,23 @@
+# compiled files
+src/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+*.app
+
+# generated files
+.cache/
+*.DS_Store
+
+# build directory
+build/
+
+# compile commands
+compile_commands.json

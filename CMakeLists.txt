@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(statsTesting LANGUAGES CXX)
+project(tsa-cpp LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -12,16 +12,32 @@ add_custom_target(copy_compile_commands ALL
   COMMENT "Copying compile_commands.json to root directory"
 )
 
-# === Package required by xtensor-blas ===
-find_package(LAPACK REQUIRED)
+# === Find xtensor and blas ===
+find_package(xtensor CONFIG REQUIRED)
+find_package(xtensor-blas CONFIG REQUIRED)
+find_package(LAPACK)
 
-# === Add subdirectories first ===
-add_subdirectory(linearModels)
-add_subdirectory(tools)
-add_subdirectory(tests)
+set(TSA_DEPS
+  xtensor
+  xtensor-blas
+  lapack
+)
 
 # === Main executable ===
 add_executable(${PROJECT_NAME} src/main.cpp)
 
 # === Link libraries ===
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LAPACK_LIBRARIES} tests)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LAPACK_LIBRARIES} ${TSA_DEPS})
+
+# === Set up library ===
+add_library(tsa INTERFACE)
+
+
+# === Expose include as interface ===
+target_include_directories(tsa
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(tsa INTERFACE ${TSA_DEPS})

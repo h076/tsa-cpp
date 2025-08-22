@@ -7,8 +7,8 @@
 #include <xtensor/core/xmath.hpp>
 #include <xtensor/io/xio.hpp>
 
-#include "RegressionModel.hpp"
-#include "modelHelpers.hpp"
+#include "../models/linear/RegressionModel.hpp"
+#include "../models/linear/modelHelpers.hpp"
 
 namespace tools {
 
