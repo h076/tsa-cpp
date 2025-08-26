@@ -8,7 +8,7 @@
 namespace preprocessing {
 
   xt::xtensor<double, 1> differencing(xt::xtensor<double, 1> exog) {
-      return xt::adapt(xt::diff(exog, 1, 0));
+      return xt::diff(exog, 1, 0);
   }
 
 }
