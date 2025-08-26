@@ -19,8 +19,9 @@ namespace tools {
         xt::xtensor<double, 2> x_lag_c = tools::addTrend(x_lag, "c", true);
 
         // Use OLS model to get phi
-        linModels::OLSModel ols(x_lag, x_cur);
-        double phi = ols.getParams()[1];
+        linModels::OLSModel ols(x_lag_c, x_cur);
+        ols.fit();
+        double phi = ols.getParams()(1);
 
         // calculate half life and return
         double h = -(std::log(2.) / std::log(abs(phi)));
