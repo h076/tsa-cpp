@@ -76,6 +76,23 @@ namespace tools
              
         };
 
+        class StandardDeviation : public Rolling<double> {
+
+            public:
+
+                StandardDeviation(double initial, xt::xtensor<double, 1> window) : Rolling(initial, window) {}
+
+                // Calculate next standard deviation
+                double update(double next) override {
+                    m_w.pop_front();
+                    m_w.push_back(next);
+
+                    m_val = xt::stddev(xt::adapt(m_w))();
+
+                    return m_val;
+                }
+        };
+
     }
 }
 
