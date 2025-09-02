@@ -260,10 +260,9 @@ namespace tools {
                 tau_coef = tau_largep_map.at(regression);
             }
 
-            auto coef_view = xt::view(*tau_coef, xt::all());
-            auto coef_arr = xt::xarray<double>(coef_view);
-            auto flipped = xt::eval(xt::flip(coef_arr));
-            std::vector<double> coeffs(flipped.begin(), flipped.end());
+            auto coef_view = xt::view(*tau_coef, N-1, xt::all());
+            std::vector<double> coeffs(coef_view.begin(), coef_view.end());
+            std::reverse(coeffs.begin(), coeffs.end());
             return norm_cdf(polyval_scalar(coeffs, teststat));
         }
 
