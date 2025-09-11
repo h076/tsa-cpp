@@ -19,14 +19,6 @@ if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     )
 endif()
 
-# === Copy compile_commands.json to root ===
-add_custom_target(copy_compile_commands ALL
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_BINARY_DIR}/compile_commands.json
-          ${PROJECT_SOURCE_DIR}/compile_commands.json
-  COMMENT "Copying compile_commands.json to root directory"
-)
-
 # === Find xtensor and blas ===
 find_package(xtensor CONFIG REQUIRED)
 find_package(xtensor-blas CONFIG REQUIRED)
