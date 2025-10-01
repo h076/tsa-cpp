@@ -7,7 +7,7 @@
 
 namespace tools {
 
-    double AROneHalfLife(xt::xtensor<double, 1> exog) {
+    inline double AROneHalfLife(xt::xtensor<double, 1> exog) {
         // centre th series
         xt::xtensor<double, 1> x = exog - xt::mean(exog);
 
