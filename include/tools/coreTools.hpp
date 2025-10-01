@@ -204,7 +204,6 @@ namespace tools {
             std::unique_ptr<linModels::RegressionModel> modInstance = linModels::getModelOfType(mod, xt::view(X, xt::all(), xt::range(0, lag)), y);
             results[lag] = modInstance->fit(); // Store model result
         }
-        std::cout << "after loop \n";
 
         double icbest; // Best information criterion
         int bestLag; // Corresponding lag
