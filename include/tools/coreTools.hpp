@@ -13,7 +13,7 @@
 namespace tools {
 
     // lagmat will return a 2d tensor of lags
-    xt::xtensor<double, 2> lagmat(xt::xtensor<double, 2>& x, int maxlag, std::string trim, std::string original) {
+    inline xt::xtensor<double, 2> lagmat(xt::xtensor<double, 2>& x, int maxlag, std::string trim, std::string original) {
         /*
          * x : xarray<double>, input at most 2D
          *
@@ -80,14 +80,14 @@ namespace tools {
     }
 
     // Handle 1D tensors for lagmat
-    xt::xtensor<double, 2> lagmat(xt::xtensor<double, 1>& x, int maxlag, std::string trim, std::string original) {
+    inline xt::xtensor<double, 2> lagmat(xt::xtensor<double, 1>& x, int maxlag, std::string trim, std::string original) {
         xt::xtensor<double, 2> x2 = xt::expand_dims(x, 1);
         return lagmat(x2, maxlag, trim, original);
     }
 
     // Prepends/appends columns for constant and/or (linear, quadratic) trend to the design matrix.
     // For example a 2D array of (n, p) will be reshaped to (n, p + k), k being the number of trend values
-    xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 2>& x, std::string trend, bool prepend) {
+    inline xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 2>& x, std::string trend, bool prepend) {
         /*
          *
          * X : 2D array
@@ -149,7 +149,7 @@ namespace tools {
     }
 
     // Handle tensor of 1D as input for addTrend
-    xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 1>& x, std::string trend, bool prepend) {
+    inline xt::xtensor<double, 2> addTrend(const xt::xtensor<double, 1>& x, std::string trend, bool prepend) {
         xt::xtensor<double, 2> x2 = xt::expand_dims(x, 1);
         return addTrend(x2, trend, prepend);
     }
@@ -160,7 +160,7 @@ namespace tools {
     };
 
     // Returns the result for the lag length that maximises info criterion
-    autoLagResult autoLag(linModels::modelType mod, const xt::xtensor<double, 2>& X, const xt::xtensor<double, 1>& y,
+    inline autoLagResult autoLag(linModels::modelType mod, const xt::xtensor<double, 2>& X, const xt::xtensor<double, 1>& y,
                             int startLag, int maxLag, std::string method) {
 
         /*
