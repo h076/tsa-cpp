@@ -38,7 +38,7 @@ namespace tests {
             double icbest;
         };
 
-        ADFResult adfuller(xt::xtensor<double, 1> x, int maxlag = 0, std::string regression = "c",
+        inline ADFResult adfuller(xt::xtensor<double, 1> x, int maxlag = 0, std::string regression = "c",
                       std::string autolag = "AIC", bool store = false, bool regresults = false) {
             /**
              * x : 1d array of test data
